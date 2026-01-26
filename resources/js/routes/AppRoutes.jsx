@@ -4,7 +4,7 @@ import { Navigate, Route, Routes } from "react-router-dom";
 import api from "../api";
 import { logout, setAuth } from "../store/authSlice";
 
-import Chat from "../pages/Chat";
+import Chat from "../pages/Chat/Chat";
 import Login from "../pages/Login";
 import Register from "../pages/Register";
 
