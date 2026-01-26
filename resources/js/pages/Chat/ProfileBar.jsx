@@ -1,20 +1,42 @@
 import { useSelector } from 'react-redux';
 
-export default function ProfileBar({ onLogout }) {
+export default function ProfileBar({ onLogout, loggingOut }) {
   const { user } = useSelector((s) => s.auth);
 
   return (
-    <div className="flex justify-between items-center p-4 border-b">
-      <div>
-        <p className="text-xs text-gray-500">Logged in</p>
-        <p className="font-bold">{user?.name}</p>
+    <div className="w-full bg-white border-b p-4">
+      <div className="flex justify-between items-center">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center text-white font-bold">
+            {user?.name?.charAt(0).toUpperCase()}
+          </div>
+          <div>
+            <p className="text-sm text-gray-500">Logged in as</p>
+            <p className="font-bold">{user?.name}</p>
+          </div>
+        </div>
+        <button 
+          className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
+            loggingOut 
+              ? 'bg-gray-300 text-gray-500 cursor-not-allowed' 
+              : 'bg-red-500 text-white hover:bg-red-600'
+          }`}
+          onClick={onLogout}
+          disabled={loggingOut}
+        >
+          {loggingOut ? (
+            <span className="flex items-center">
+              <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              Logging out...
+            </span>
+          ) : (
+            'Logout'
+          )}
+        </button>
       </div>
-      <button 
-        className="text-red-600 text-sm hover:text-red-800"
-        onClick={onLogout}
-      >
-        Logout
-      </button>
     </div>
   );
 }

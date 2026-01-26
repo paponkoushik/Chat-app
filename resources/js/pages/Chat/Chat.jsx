@@ -1,16 +1,15 @@
-
 import { useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import api from "../../api";
 import { makeEcho } from "../../echo";
-import { logout } from "../../store/authSlice";
+import { logoutUser } from "../../store/authSlice";
 import ChatBox from "./ChatBox";
 import ProfileBar from "./ProfileBar";
 import UserList from "./UserList";
 
 export default function Chat() {
   const bottomRef = useRef(null);
-  const { user, token } = useSelector((s) => s.auth);
+  const { user, token, loading } = useSelector((s) => s.auth);
   const dispatch = useDispatch();
 
   const [users, setUsers] = useState([]);
@@ -20,7 +19,6 @@ export default function Chat() {
   const [loadingUsers, setLoadingUsers] = useState(false);
   const [loadingMessages, setLoadingMessages] = useState(false);
 
-  // Echo setup
   useEffect(() => {
     if (!token || !user?.id) return;
 
@@ -45,7 +43,7 @@ export default function Chat() {
     };
   }, [token, user?.id, selectedUser?.id]);
 
-  // Load users
+
   async function loadUsers() {
     setLoadingUsers(true);
     try {
@@ -58,7 +56,6 @@ export default function Chat() {
     }
   }
 
-  // Load messages
   async function loadMessages(uid) {
     setLoadingMessages(true);
     try {
@@ -71,7 +68,6 @@ export default function Chat() {
     }
   }
 
-  // Send message
   async function sendMessage(e) {
     e.preventDefault();
     if (!text.trim() || !selectedUser) return;
@@ -101,35 +97,26 @@ export default function Chat() {
     }
   }
 
-  // Select user handler
+
   const handleSelectUser = async (user) => {
     setMessages([]);
     setSelectedUser(user);
     await loadMessages(user.id);
   };
 
-  // Logout handler
-  async function signoff() {
-    try {
-      await api.post("/logout");
-    } catch (e) {
-      console.log('Logout error:', e);
-    }
-    dispatch(logout());
+  async function handleLogout() {
+    await dispatch(logoutUser());
   }
 
-  // Load users on mount
   useEffect(() => {
     loadUsers();
   }, []);
 
   return (
     <div className="h-screen flex flex-col bg-gray-100">
-      {/* Profile Bar - Top */}
-      <ProfileBar onLogout={signoff} />
+      <ProfileBar onLogout={handleLogout} loggingOut={loading} /> 
 
       <div className="flex flex-1 overflow-hidden">
-        {/* User List - Left Sidebar */}
         <UserList
           users={users}
           currentUserId={user?.id}
@@ -138,7 +125,6 @@ export default function Chat() {
           loading={loadingUsers}
         />
 
-        {/* Chat Box - Right Main Area */}
         <ChatBox
           selectedUser={selectedUser}
           messages={messages}
