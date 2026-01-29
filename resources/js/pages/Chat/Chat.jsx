@@ -8,15 +8,14 @@ import ProfileBar from "./ProfileBar";
 import UserList from "./UserList";
 
 export default function Chat() {
+
   const bottomRef = useRef(null);
   const { user, token, loading } = useSelector((s) => s.auth);
   const dispatch = useDispatch();
 
-  const [users, setUsers] = useState([]);
   const [selectedUser, setSelectedUser] = useState(null);
   const [messages, setMessages] = useState([]);
   const [text, setText] = useState("");
-  const [loadingUsers, setLoadingUsers] = useState(false);
   const [loadingMessages, setLoadingMessages] = useState(false);
 
   useEffect(() => {
@@ -42,19 +41,6 @@ export default function Chat() {
       echo.disconnect();
     };
   }, [token, user?.id, selectedUser?.id]);
-
-
-  async function loadUsers() {
-    setLoadingUsers(true);
-    try {
-      const res = await api.get("/users");
-      setUsers(res.data);
-    } catch (error) {
-      console.error("Failed to load users:", error);
-    } finally {
-      setLoadingUsers(false);
-    }
-  }
 
   async function loadMessages(uid) {
     setLoadingMessages(true);
@@ -97,7 +83,6 @@ export default function Chat() {
     }
   }
 
-
   const handleSelectUser = async (user) => {
     setMessages([]);
     setSelectedUser(user);
@@ -108,27 +93,20 @@ export default function Chat() {
     await dispatch(logoutUser());
   }
 
-  useEffect(() => {
-    loadUsers();
-  }, []);
-
   return (
     <div className="h-screen flex flex-col bg-gray-100">
       <ProfileBar onLogout={handleLogout} loggingOut={loading} /> 
 
       <div className="flex flex-1 overflow-hidden">
         <UserList
-          users={users}
-          currentUserId={user?.id}
           selectedUser={selectedUser}
           onSelectUser={handleSelectUser}
-          loading={loadingUsers}
         />
 
         <ChatBox
           selectedUser={selectedUser}
           messages={messages}
-          currentUserId={user?.id}
+          currentUserId={user?.id} // ChatBox-এ দরকার message alignment-এর জন্য
           text={text}
           setText={setText}
           onSendMessage={sendMessage}
