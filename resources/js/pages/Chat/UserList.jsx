@@ -1,33 +1,46 @@
-import { useEffect, useState } from "react";
-import api from "../../api";
+import { memo } from "react";
 
-export default function UserList({ 
-  selectedUser, 
-  onSelectUser 
+const UserListItem = memo(function UserListItem({
+  user,
+  isSelected,
+  onSelectUser,
 }) {
-  const [users, setUsers] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  return (
+    <button
+      onClick={() => onSelectUser(user)}
+      className={`w-full text-left p-3 rounded-xl border transition-all duration-200 ${
+        isSelected
+          ? "bg-blue-50 border-blue-200"
+          : "border-gray-200 hover:bg-gray-50 hover:border-gray-300"
+      }`}
+    >
+      <div className="flex items-center space-x-3">
+        <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
+          <span className="text-blue-600 font-medium">
+            {user.name?.charAt(0).toUpperCase()}
+          </span>
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="font-medium text-gray-800">{user.name}</p>
+          <p className="text-xs text-gray-500 truncate">{user.email}</p>
+        </div>
+        {user.unread_count > 0 && (
+          <div className="min-w-6 rounded-full bg-red-500 px-2 py-0.5 text-center text-xs font-semibold text-white">
+            {user.unread_count}
+          </div>
+        )}
+      </div>
+    </button>
+  );
+});
 
-  // Load users on component mount
-  useEffect(() => {
-    async function loadUsers() {
-      try {
-        setLoading(true);
-        const res = await api.get("/users");
-        // Backend already excludes auth user, so no filtering needed
-        setUsers(res.data);
-      } catch (error) {
-        console.error("Failed to load users:", error);
-        setError("Failed to load users");
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    loadUsers();
-  }, []); // No dependencies needed
-
+function UserList({ 
+  users,
+  loading,
+  error,
+  selectedUser, 
+  onSelectUser,
+}) {
   return (
     <div className="w-72 bg-white border-r p-4 h-full overflow-y-auto">
       <h4 className="mt-6 font-semibold text-gray-700">Users</h4>
@@ -41,31 +54,17 @@ export default function UserList({
           <div className="text-center py-4 text-gray-500">No other users available</div>
         ) : (
           users.map((u) => (
-            <button
+            <UserListItem
               key={u.id}
-              onClick={() => onSelectUser(u)}
-              className={`w-full text-left p-3 rounded-xl border transition-all duration-200 ${
-                selectedUser?.id === u.id 
-                  ? "bg-blue-50 border-blue-200" 
-                  : "border-gray-200 hover:bg-gray-50 hover:border-gray-300"
-              }`}
-            >
-              <div className="flex items-center space-x-3">
-                {/* Optional: Add user avatar */}
-                <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
-                  <span className="text-blue-600 font-medium">
-                    {u.name?.charAt(0).toUpperCase()}
-                  </span>
-                </div>
-                <div>
-                  <p className="font-medium text-gray-800">{u.name}</p>
-                  <p className="text-xs text-gray-500 truncate">{u.email}</p>
-                </div>
-              </div>
-            </button>
+              user={u}
+              isSelected={selectedUser?.id === u.id}
+              onSelectUser={onSelectUser}
+            />
           ))
         )}
       </div>
     </div>
   );
 }
+
+export default memo(UserList);

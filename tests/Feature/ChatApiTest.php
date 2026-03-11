@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Events\MessagesSeen;
 use App\Events\MessageSent;
 use App\Models\Message;
 use App\Models\User;
@@ -43,6 +44,40 @@ class ChatApiTest extends TestCase
         ]);
 
         Event::assertDispatched(MessageSent::class);
+    }
+
+    public function test_opening_a_conversation_marks_incoming_messages_as_seen(): void
+    {
+        Event::fake([MessagesSeen::class]);
+
+        $viewer = User::factory()->create();
+        $chatUser = User::factory()->create();
+
+        $unseenMessage = Message::create([
+            'sender_id' => $chatUser->id,
+            'receiver_id' => $viewer->id,
+            'message' => 'Unread',
+        ]);
+
+        $alreadySeenMessage = Message::create([
+            'sender_id' => $chatUser->id,
+            'receiver_id' => $viewer->id,
+            'message' => 'Seen already',
+            'seen_at' => now()->subMinute(),
+        ]);
+
+        Sanctum::actingAs($viewer);
+
+        $response = $this->postJson('/api/messages/' . $chatUser->id . '/seen');
+
+        $response
+            ->assertOk()
+            ->assertJsonPath('message_ids.0', $unseenMessage->id);
+
+        $this->assertNotNull($unseenMessage->fresh()->seen_at);
+        $this->assertNotNull($alreadySeenMessage->fresh()->seen_at);
+
+        Event::assertDispatched(MessagesSeen::class);
     }
 
     public function test_a_user_cannot_send_a_message_to_themself(): void
@@ -121,5 +156,40 @@ class ChatApiTest extends TestCase
         ])->assertUnauthorized();
 
         $this->getJson('/api/messages/' . $user->id)->assertUnauthorized();
+        $this->postJson('/api/messages/' . $user->id . '/seen')->assertUnauthorized();
+    }
+
+    public function test_users_list_includes_unread_message_counts(): void
+    {
+        $viewer = User::factory()->create();
+        $senderWithUnread = User::factory()->create();
+        $senderWithoutUnread = User::factory()->create();
+
+        Message::create([
+            'sender_id' => $senderWithUnread->id,
+            'receiver_id' => $viewer->id,
+            'message' => 'Unread 1',
+        ]);
+
+        Message::create([
+            'sender_id' => $senderWithUnread->id,
+            'receiver_id' => $viewer->id,
+            'message' => 'Unread 2',
+        ]);
+
+        Message::create([
+            'sender_id' => $senderWithoutUnread->id,
+            'receiver_id' => $viewer->id,
+            'message' => 'Seen',
+            'seen_at' => now(),
+        ]);
+
+        Sanctum::actingAs($viewer);
+
+        $response = $this->getJson('/api/users');
+
+        $response->assertOk();
+        $this->assertSame(2, collect($response->json())->firstWhere('id', $senderWithUnread->id)['unread_count']);
+        $this->assertSame(0, collect($response->json())->firstWhere('id', $senderWithoutUnread->id)['unread_count']);
     }
 }

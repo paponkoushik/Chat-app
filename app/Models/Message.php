@@ -10,6 +10,13 @@ class Message extends Model
         'sender_id',
         'receiver_id',
         'message',
+        'seen_at',
     ];
 
+    protected function casts(): array
+    {
+        return [
+            'seen_at' => 'datetime',
+        ];
+    }
 }

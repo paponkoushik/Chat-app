@@ -22,6 +22,7 @@ Route::middleware("auth:sanctum")->group(function () {
 Route::middleware("auth:sanctum")->group(function () {
     Route::post("/messages/send", [ChatController::class, "send"]);
     Route::get("/messages/{userId}", [ChatController::class, "inbox"]);
+    Route::post("/messages/{userId}/seen", [ChatController::class, "markSeen"]);
 });
 
 Route::middleware('auth:sanctum')->get('/users', [UserController::class, 'index']);

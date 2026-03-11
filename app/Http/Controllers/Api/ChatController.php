@@ -27,4 +27,9 @@ class ChatController extends Controller
             $request->safe()->only(['limit', 'before_id']),
         );
     }
+
+    public function markSeen(int $userId): JsonResponse
+    {
+        return $this->chatService->markConversationAsSeen($userId);
+    }
 }

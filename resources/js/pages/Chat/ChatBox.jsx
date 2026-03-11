@@ -67,13 +67,18 @@ export default function ChatBox({
                 >
                   <p>{m.message}</p>
                   <div className={`mt-1 ${m.sender_id === currentUserId ? 'text-right' : ''}`}>
-                        <p className={`text-xs ${m.sender_id === currentUserId ? 'text-blue-200' : 'text-gray-500'}`}>
-                        {new Date(m.created_at || Date.now()).toLocaleTimeString([], {
-                            hour: '2-digit',
-                            minute: '2-digit'
-                        })}
-                        </p>
-                    </div>
+                    <p className={`text-xs ${m.sender_id === currentUserId ? 'text-blue-200' : 'text-gray-500'}`}>
+                      {new Date(m.created_at || Date.now()).toLocaleTimeString([], {
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })}
+                    </p>
+                    {m.sender_id === currentUserId && (
+                      <p className="text-xs text-blue-200">
+                        {m.seen_at ? 'Seen' : 'Sent'}
+                      </p>
+                    )}
+                  </div>
                 </div>
               </div>
             ))

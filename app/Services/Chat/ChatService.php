@@ -2,6 +2,7 @@
 
 namespace App\Services\Chat;
 
+use App\Events\MessagesSeen;
 use App\Events\MessageSent;
 use App\Models\Message;
 use Illuminate\Database\Eloquent\Builder;
@@ -32,6 +33,22 @@ class ChatService
             ->get();
 
         return $this->buildInboxResponse($messages, $limit);
+    }
+
+    public function markConversationAsSeen(int $userId): JsonResponse
+    {
+        $viewerId = auth()->id();
+        $seenAt = now();
+        $messageIds = $this->getUnseenMessageIds($userId, $viewerId);
+
+        if (empty($messageIds)) {
+            return $this->buildSeenResponse();
+        }
+
+        $this->updateSeenMessages($messageIds, $seenAt);
+        $this->broadcastSeenMessages($viewerId, $userId, $messageIds, $seenAt->toISOString());
+
+        return $this->buildSeenResponse($messageIds, $seenAt->toISOString());
     }
 
     private function resolveLimit(array $data): int
@@ -77,6 +94,41 @@ class ChatService
                 'has_more' => $hasMore,
                 'oldest_message_id' => $messages->first()?->id,
             ],
+        ]);
+    }
+
+    private function getUnseenMessageIds(int $userId, int $viewerId): array
+    {
+        return Message::query()
+            ->where('sender_id', $userId)
+            ->where('receiver_id', $viewerId)
+            ->whereNull('seen_at')
+            ->pluck('id')
+            ->all();
+    }
+
+    private function updateSeenMessages(array $messageIds, $seenAt): void
+    {
+        Message::query()
+            ->whereIn('id', $messageIds)
+            ->update(['seen_at' => $seenAt]);
+    }
+
+    private function broadcastSeenMessages(int $viewerId, int $userId, array $messageIds, string $seenAt): void
+    {
+        broadcast(new MessagesSeen(
+            viewerId: $viewerId,
+            chatUserId: $userId,
+            messageIds: $messageIds,
+            seenAt: $seenAt,
+        ))->toOthers();
+    }
+
+    private function buildSeenResponse(array $messageIds = [], ?string $seenAt = null): JsonResponse
+    {
+        return response()->json([
+            'message_ids' => $messageIds,
+            'seen_at' => $seenAt,
         ]);
     }
 }
