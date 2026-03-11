@@ -3,45 +3,28 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\Message;
-use Illuminate\Http\Request;
-use App\Events\MessageSent;
+use App\Http\Requests\InboxMessagesRequest;
+use App\Http\Requests\SendMessageRequest;
+use App\Services\Chat\ChatService;
 use Illuminate\Http\JsonResponse;
 
 class ChatController extends Controller
 {
-    public function send(Request $request): JsonResponse
+    public function __construct(protected ChatService $chatService)
     {
-        $request->validate([
-            'receiver_id' => 'required|exists:users,id',
-            'message' => 'required|string',
-        ]);
+    }
 
-        $msg = Message::create([
-            'sender_id' => $request->user()->id,
-            'receiver_id' => $request->receiver_id,
-            'message' => $request->message,
-        ]);
-
-        broadcast(new MessageSent($msg))->toOthers(); // ✅ add this
-
-        return response()->json($msg);
+    public function send(SendMessageRequest $request): JsonResponse
+    {
+        return $this->chatService->sendMessage($request->safe()->only(['receiver_id', 'message']));
     }
 
 
-    public function inbox(Request $request, $userId)
+    public function inbox(InboxMessagesRequest $request, int $userId): JsonResponse
     {
-        $myId = $request->user()->id;
-
-        $messages = Message::where(function ($q) use ($myId, $userId) {
-            $q->where('sender_id', $myId)->where('receiver_id', $userId);
-        })
-            ->orWhere(function ($q) use ($myId, $userId) {
-                $q->where('sender_id', $userId)->where('receiver_id', $myId);
-            })
-            ->orderBy('id', 'asc')
-            ->get();
-
-        return response()->json($messages);
+        return $this->chatService->getInboxMessages(
+            $userId,
+            $request->safe()->only(['limit', 'before_id']),
+        );
     }
 }

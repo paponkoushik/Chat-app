@@ -9,7 +9,10 @@ export default function ChatBox({
   setText,
   onSendMessage,
   bottomRef,
-  loading
+  loading,
+  hasMoreMessages,
+  loadingOlderMessages,
+  onLoadOlderMessages,
 }) {
   const localBottomRef = useRef(null);
 
@@ -31,6 +34,19 @@ export default function ChatBox({
         <h2 className="text-xl font-bold mb-4">Chat with {selectedUser.name}</h2>
 
         <div className="flex-1 bg-white border rounded-2xl p-4 overflow-y-auto">
+          {hasMoreMessages && !loading && (
+            <div className="mb-4 flex justify-center">
+              <button
+                type="button"
+                onClick={onLoadOlderMessages}
+                disabled={loadingOlderMessages}
+                className="rounded-full border border-gray-300 px-4 py-2 text-sm text-gray-700 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {loadingOlderMessages ? "Loading..." : "Load older messages"}
+              </button>
+            </div>
+          )}
+
           {loading ? (
             <div className="text-center py-8">Loading messages...</div>
           ) : messages.length === 0 ? (
